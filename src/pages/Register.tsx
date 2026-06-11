@@ -16,42 +16,46 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const loginSchema = z.object({
+const registerSchema = z.object({
   email: z.string().email("E-mail inválido."),
   password: z.string().min(6, "Mínimo de 6 caracteres."),
+  confirmPassword: z.string().min(6, "Mínimo de 6 caracteres."),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem.",
+  path: ["confirmPassword"],
 });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 /**
- * Página de login com autenticação Supabase (email/senha).
+ * Página de cadastro com autenticação Supabase (email/senha).
  *
- * Redireciona para / após login bem-sucedido.
+ * Redireciona para /login após cadastro bem-sucedido.
  */
-export default function LoginPage() {
-  const { signIn } = useAuth();
+export default function RegisterPage() {
+  const { signUp } = useAuth();
   const navigate = useNavigate();
 
-  const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+  const form = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { email: "", password: "", confirmPassword: "" },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    const { error } = await signIn(data.email, data.password);
+  const onSubmit = async (data: RegisterFormData) => {
+    const { error } = await signUp(data.email, data.password);
     if (error) {
-      toast.error("Erro ao entrar: " + error.message);
+      toast.error("Erro ao cadastrar: " + error.message);
       return;
     }
-    toast.success("Login realizado com sucesso!");
-    navigate("/");
+    toast.success("Cadastro realizado! Faça login para continuar.");
+    navigate("/login");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Meu To Do</CardTitle>
+          <CardTitle className="text-2xl text-center">Criar Conta</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -82,19 +86,32 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar Senha</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <Button
                 type="submit"
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "Entrando..." : "Entrar"}
+                {form.formState.isSubmitting ? "Cadastrando..." : "Cadastrar"}
               </Button>
             </form>
           </Form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Não tem uma conta?{" "}
-            <Link to="/register" className="text-primary hover:underline">
-              Cadastre-se
+            Já tem uma conta?{" "}
+            <Link to="/login" className="text-primary hover:underline">
+              Entrar
             </Link>
           </p>
         </CardContent>
