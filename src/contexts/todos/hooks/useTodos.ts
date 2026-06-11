@@ -31,11 +31,18 @@ export function useTodos() {
 
   const createTodo = useMutation({
     mutationFn: async (input: TodoInput) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) throw new Error("Usuário não autenticado.");
+
       const { data, error } = await supabase
         .from("todos")
-        .insert({ title: input.title })
+        .insert({ title: input.title, user_id: user.id })
         .select()
         .single();
+
       if (error) throw new Error(error.message);
       return data as Todo;
     },
