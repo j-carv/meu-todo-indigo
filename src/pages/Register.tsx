@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
+import { UserPlus } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks/useAuth";
 import {
   Form,
@@ -52,9 +53,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent/15 via-background to-primary/15 p-4">
+      <Card className="w-full max-w-sm border-none shadow-2xl shadow-primary/10 rounded-3xl">
+        <CardHeader className="space-y-3">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-primary text-primary-foreground shadow-lg shadow-primary/30">
+            <UserPlus className="h-7 w-7" />
+          </div>
           <CardTitle className="text-2xl text-center">Criar Conta</CardTitle>
         </CardHeader>
         <CardContent>
