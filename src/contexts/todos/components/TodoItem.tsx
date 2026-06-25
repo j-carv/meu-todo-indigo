@@ -36,7 +36,7 @@ interface TodoItemProps {
  * @param todo - Tarefa a ser exibida.
  */
 export function TodoItem({ todo }: TodoItemProps) {
-  const { toggleTodo, updateTodo, deleteTodo } = useTodos();
+  const { toggleTodo, updateTodo, softDeleteTodo } = useTodos();
 
   // Estado do diálogo de edição e do título sendo editado.
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -62,7 +62,7 @@ export function TodoItem({ todo }: TodoItemProps) {
   };
 
   const handleConfirmDelete = () => {
-    deleteTodo.mutate(todo.id, {
+    softDeleteTodo.mutate(todo.id, {
       onSuccess: () => setConfirmDeleteOpen(false),
     });
   };
@@ -108,7 +108,7 @@ export function TodoItem({ todo }: TodoItemProps) {
           variant="destructive"
           size="icon"
           onClick={() => setConfirmDeleteOpen(true)}
-          disabled={deleteTodo.isPending}
+          disabled={softDeleteTodo.isPending}
           title="Excluir tarefa"
         >
           <Trash2 className="h-4 w-4" />
@@ -173,15 +173,15 @@ export function TodoItem({ todo }: TodoItemProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza de que deseja excluir a tarefa "{todo.title}"? Esta
-              ação não pode ser desfeita.
+              Tem certeza de que deseja excluir a tarefa "{todo.title}"? Ela será
+              movida para a lixeira e você poderá restaurá-la depois.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              disabled={deleteTodo.isPending}
+              disabled={softDeleteTodo.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Sim, excluir

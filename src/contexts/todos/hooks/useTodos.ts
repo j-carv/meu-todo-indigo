@@ -4,14 +4,23 @@ import { toast } from "sonner";
 import type { Todo, TodoInput } from "../todos.types";
 
 /**
- * Hook para gerenciamento de tarefas (CRUD) via TanStack Query.
+ * Hook para gerenciamento de tarefas (CRUD + soft delete) via TanStack Query.
+ *
+ * Soft delete: a exclusão apenas preenche `deleted_at`, sem remover o registro.
+ * Tarefas na lixeira podem ser restauradas (reativadas) com `restoreTodo`.
  *
  * Depende de: supabase client, toast (sonner).
- * Consumido por: HomePage, TodoList, TodoForm.
+ * Consumido por: HomePage, TodoList, TodoForm, TodoTrash.
  */
 export function useTodos() {
   const queryClient = useQueryClient();
 
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["todos"] });
+    queryClient.invalidateQueries({ queryKey: ["todos", "deleted"] });
+  };
+
+  // Tarefas ativas (não excluídas) do usuário logado.
   const {
     data: todos,
     isLoading,
@@ -30,7 +39,33 @@ export function useTodos() {
         .from("todos")
         .select("*")
         .eq("user_id", user.id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
+
+      if (error) throw new Error(error.message);
+      return data as Todo[];
+    },
+  });
+
+  // Tarefas na lixeira (soft deleted) do usuário logado.
+  const {
+    data: deletedTodos,
+    isLoading: isLoadingDeleted,
+  } = useQuery({
+    queryKey: ["todos", "deleted"],
+    queryFn: async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) throw new Error("Usuário não autenticado.");
+
+      const { data, error } = await supabase
+        .from("todos")
+        .select("*")
+        .eq("user_id", user.id)
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false });
 
       if (error) throw new Error(error.message);
       return data as Todo[];
@@ -55,7 +90,7 @@ export function useTodos() {
       return data as Todo;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      invalidate();
       toast.success("Tarefa criada!");
     },
     onError: (err) => toast.error("Erro ao criar: " + err.message),
@@ -78,7 +113,7 @@ export function useTodos() {
       if (error) throw new Error(error.message);
       return data as Todo;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["todos"] }),
+    onSuccess: () => invalidate(),
     onError: (err) => toast.error("Erro ao atualizar: " + err.message),
   });
 
@@ -94,32 +129,55 @@ export function useTodos() {
       return data as Todo;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      invalidate();
       toast.success("Tarefa atualizada!");
     },
     onError: (err) => toast.error("Erro ao editar: " + err.message),
   });
 
-  const deleteTodo = useMutation({
+  // Soft delete: marca a tarefa como excluída sem apagar o registro.
+  const softDeleteTodo = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("todos").delete().eq("id", id);
+      const { error } = await supabase
+        .from("todos")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["todos"] });
-      toast.success("Tarefa removida!");
+      invalidate();
+      toast.success("Tarefa movida para a lixeira.");
     },
-    onError: (err) => toast.error("Erro ao remover: " + err.message),
+    onError: (err) => toast.error("Erro ao excluir: " + err.message),
+  });
+
+  // Restaura uma tarefa da lixeira para a lista de ativas.
+  const restoreTodo = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("todos")
+        .update({ deleted_at: null })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Tarefa restaurada!");
+    },
+    onError: (err) => toast.error("Erro ao restaurar: " + err.message),
   });
 
   return {
     todos,
+    deletedTodos,
     isLoading,
+    isLoadingDeleted,
     isError,
     error,
     createTodo,
     toggleTodo,
     updateTodo,
-    deleteTodo,
+    softDeleteTodo,
+    restoreTodo,
   };
 }

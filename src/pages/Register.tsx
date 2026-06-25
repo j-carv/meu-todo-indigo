@@ -52,10 +52,13 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/15 via-background to-background p-4">
+      <Card className="w-full max-w-sm border-primary/10 shadow-xl shadow-primary/10">
         <CardHeader>
           <CardTitle className="text-2xl text-center">Criar Conta</CardTitle>
+          <p className="text-center text-sm text-muted-foreground">
+            Comece a usar o <span className="text-primary font-medium">TarefaZen</span>.
+          </p>
         </CardHeader>
         <CardContent>
           <Form {...form}>

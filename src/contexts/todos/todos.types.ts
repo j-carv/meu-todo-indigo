@@ -8,6 +8,8 @@ export interface Todo {
   completed: boolean;
   created_at: string;
   updated_at: string;
+  /** Data do soft delete. `null` = tarefa ativa; preenchido = na lixeira. */
+  deleted_at: string | null;
 }
 
 /**
